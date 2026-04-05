@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeX</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#000;
+  color:#fff;
+}
+.container{padding:15px;}
+.card{
+  background:#111;
+  padding:15px;
+  margin:10px 0;
+  border-radius:10px;
+}
+button{
+  padding:10px;
+  margin-top:5px;
+  width:100%;
+  border:none;
+  background:#00c853;
+  color:#fff;
+}
+input{
+  width:100%;
+  padding:10px;
+  margin:5px 0;
+}
+</style>
+</head>
+
+<body>
+
+<!-- AUTH -->
+<div id="auth" class="container">
+  <h2>Login</h2>
+  <input id="li_email" placeholder="Email">
+  <input id="li_pass" placeholder="Password">
+  <button onclick="login()">Login</button>
+
+  <h2>Signup</h2>
+  <input id="su_user" placeholder="Username">
+  <input id="su_email" placeholder="Email">
+  <input id="su_pass" placeholder="Password">
+  <button onclick="signup()">Signup</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none" class="container">
+
+<div class="card">
+  <h3>Welcome <span id="user"></span></h3>
+  <p>Email: <span id="email"></span></p>
+</div>
+
+<div class="card">
+  <h3>Balance</h3>
+  <h1>$<span id="bal">0</span></h1>
+  <button onclick="openSupport()">Customer Support</button>
+</div>
+
+<div class="card">
+  <h3>Market</h3>
+  <button onclick="selectCoin('BTCUSDT')">BTC</button>
+  <button onclick="selectCoin('ETHUSDT')">ETH</button>
+</div>
+
+<div class="card">
+  <h3>Live Chart</h3>
+  <iframe id="chartBox" width="100%" height="300"></iframe>
+</div>
+
+<div class="card" id="adminPanel" style="display:none">
+  <h3>Admin Panel</h3>
+  <input id="targetEmail" placeholder="User Email">
+  <input id="newBalance" placeholder="Amount" type="number">
+  <button onclick="updateBal()">Update Balance</button>
+  <div id="usersList"></div>
+</div>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+<script>
+
+let adminEmail = "admin@gmail.com";
+
+// SIGNUP
+function signup(){
+  let user = su_user.value;
+  let email = su_email.value;
+  let pass = su_pass.value;
+
+  if(!user || !email || !pass){
+    alert("Fill all fields");
+    return;
+  }
+
+  localStorage.setItem(email, JSON.stringify({
+    user:user,
+    pass:pass,
+    balance:0
+  }));
+
+  alert("Signup done");
+}
+
+// LOGIN
+function login(){
+  let email = li_email.value;
+  let pass = li_pass.value;
+
+  let data = JSON.parse(localStorage.getItem(email));
+
+  if(!data){
+    alert("User not found");
+    return;
+  }
+
+  if(data.pass !== pass){
+    alert("Wrong password");
+    return;
+  }
+
+  localStorage.setItem("current", email);
+  show();
+}
+
+// SHOW DASHBOARD
+function show(){
+  let email = localStorage.getItem("current");
+  let data = JSON.parse(localStorage.getItem(email));
+
+  auth.style.display="none";
+  dashboard.style.display="block";
+
+  user.innerText = data.user;
+  bal.innerText = data.balance;
+  document.getElementById("email").innerText = email;
+
+  if(email === adminEmail){
+    adminPanel.style.display="block";
+    loadUsers();
+  }
+
+  selectCoin("BTCUSDT");
+}
+
+// LOGOUT
+function logout(){
+  localStorage.removeItem("current");
+  location.reload();
+}
+
+// UPDATE BALANCE
+function updateBal(){
+  let email = targetEmail.value;
+  let amount = parseInt(newBalance.value);
+
+  let data = JSON.parse(localStorage.getItem(email));
+
+  if(!data){
+    alert("User not found");
+    return;
+  }
+
+  data.balance += amount;
+
+  localStorage.setItem(email, JSON.stringify(data));
+
+  alert("Updated");
+  loadUsers();
+}
+
+// LOAD USERS
+function loadUsers(){
+  let html = "";
+
+  for(let i=0;i<localStorage.length;i++){
+    let key = localStorage.key(i);
+    if(key==="current") continue;
+
+    let data = JSON.parse(localStorage.getItem(key));
+
+    html += `
+      <div class="card">
+      ${data.user} (${key}) <br>
+      Balance: $${data.balance}
+      </div>
+    `;
+  }
+
+  usersList.innerHTML = html;
+}
+
+// CHART
+function selectCoin(symbol){
+  document.getElementById("chartBox").src =
+  "https://s.tradingview.com/widgetembed/?symbol=BINANCE:"+symbol+"&interval=1";
+}
+
+// SUPPORT
+function openSupport(){
+  alert("Support: Contact Admin");
+}
+
+// AUTO LOGIN
+if(localStorage.getItem("current")){
+  show();
+}
+
+</script>
+
+</body>
+</html>
