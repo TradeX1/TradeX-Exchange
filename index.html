@@ -46,6 +46,8 @@ button{background:#ff9800;color:#fff}
 <button onclick="setCoin('BTCUSDT')">BTC</button>
 <button onclick="setCoin('ETHUSDT')">ETH</button>
 <button onclick="setCoin('BNBUSDT')">BNB</button>
+  <button onclick="openSupport()">Customer Support 💬</button>
+  
 <iframe id="chart" width="100%" height="300"></iframe>
 </div><div class="card">
 <h3>Support</h3>
@@ -187,9 +189,67 @@ window.sendMsg = function(){
 // NAV
 window.logout=()=>location.reload();
 window.scrollToTop=()=>window.scrollTo(0,0);
+  const supportBox = document.getElementById("supportBox");
+
+window.openSupport = function(){
+  supportBox.style.display = "block";
+  loadChat();
+}
+
+window.closeSupport = function(){
+  supportBox.style.display = "none";
+}
+
+window.sendSupport = async function(){
+  let u = JSON.parse(localStorage.getItem("user"));
+  let msg = document.getElementById("supportMsg").value;
+
+  if(!msg){
+    alert("Message likho ❌");
+    return;
+  }
+
+  await addDoc(collection(db,"support"),{
+    email: u.email,
+    message: msg,
+    sender: "user",
+    time: new Date().toLocaleString()
+  });
+
+  document.getElementById("supportMsg").value = "";
+
+  loadChat();
+}
 window.scrollToChart=()=>chart.scrollIntoView();
 window.scrollToSupport=()=>msg.scrollIntoView();
+  window.openSupport = function(){
+  supportBox.style.display = "block";
+  loadChat(); // chat load hoga
+}
 
+window.closeSupport = function(){
+  supportBox.style.display = "none";
+}
+window.sendSupport = async function(){
+  let u = JSON.parse(localStorage.getItem("user"));
+  let msg = document.getElementById("supportMsg").value;
+
+  if(!msg){
+    alert("Message likho ❌");
+    return;
+  }
+
+  await addDoc(collection(db,"support"),{
+    email: u.email,
+    message: msg,
+    sender: "user",
+    time: new Date().toLocaleString()
+  });
+
+  document.getElementById("supportMsg").value = "";
+
+  loadChat(); // 👈 message turant show hoga
+               }
 // DEPOSIT
 window.openDeposit=()=>depositBox.style.display="block";
 window.closeDeposit=()=>depositBox.style.display="none";
@@ -199,5 +259,39 @@ window.copyWallet=()=>{
 }
 
 window.onload=()=>setCoin("BTCUSDT");
-</script></body>
+  async function loadChat(){
+  let u = JSON.parse(localStorage.getItem("user"));
+  let snap = await getDocs(collection(db,"support"));
+
+  let html="";
+
+  snap.forEach(doc=>{
+    let d = doc.data();
+
+    if(d.email == u.email){
+      html += `<p>${d.message}</p>`;
+    }
+  });
+
+  document.getElementById("chatArea").innerHTML = html;
+  }
+</script>
+<div id="supportBox" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0b141a; color:#fff;">
+
+  <div style="background:#202c33; padding:15px;">
+    <b>Support Chat 💬</b>
+    <button onclick="closeSupport()" style="float:right;">X</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="chatArea" style="height:70%; overflow-y:auto; padding:10px;"></div>
+
+  <!-- Input -->
+  <div style="position:absolute; bottom:0; width:100%; background:#202c33; padding:10px;">
+    <input id="supportMsg" placeholder="Type message..." style="width:70%; padding:10px;">
+    <button onclick="sendSupport()">Send</button>
+  </div>
+
+</div>
+</body>
 </html>
