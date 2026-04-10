@@ -196,36 +196,153 @@ async function loadSupportMessages(){
       </p>
     `;
   });
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeX Fixed</title>
 
-  document.getElementById("adminMessages").innerHTML = html;
-}
-// CHART
-window.setCoin = function(c){
-  chart.src = "https://s.tradingview.com/widgetembed/?symbol=BINANCE:"+c;
-}
+<style>
+body{margin:0;font-family:Arial;background:#000;color:#fff}
+.header{background:#ff9800;padding:15px;text-align:center;font-weight:bold}
+.card{background:#111;padding:15px;margin:10px;border-radius:10px}
+input,button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px}
+button{background:#ff9800;color:#fff}
+</style>
+</head>
 
-// SUPPORT
-window.sendMsg = function(){
-  alert("Message sent ✅");
-}
+<body>
 
-// NAV
-window.logout=()=>location.reload();
-window.scrollToTop=()=>window.scrollTo(0,0);
-  const supportBox = document.getElementById("supportBox");
+<div class="header">🔥 TradeX FIXED</div>
 
-window.openSupport = function(){
-  supportBox.style.display = "block";
-  loadChat();
-}
+<div id="auth">
+<div class="card">
+<h3>Signup</h3>
+<input id="su_user">
+<input id="su_email">
+<input id="su_pass">
+<button onclick="signup()">Signup</button>
+</div>
+
+<div class="card">
+<h3>Login</h3>
+<input id="li_email">
+<input id="li_pass">
+<button onclick="login()">Login</button>
+</div>
+</div>
+
+<div id="dashboard" style="display:none">
+<div class="card">
+<h3>Welcome <span id="user"></span></h3>
+<p id="email"></p>
+<h2>$<span id="bal">0</span></h2>
+</div>
+
+<button onclick="openSupport()">Customer Support 💬</button>
+<button onclick="logout()">Logout</button>
+
+<div id="adminPanel" style="display:none">
+<h3>Admin Messages</h3>
+<div id="adminMessages"></div>
+</div>
+
+</div>
+
+<!-- CHAT UI -->
+<div id="supportBox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;">
+<div style="background:#222;padding:10px;">
+Support Chat
+<button onclick="closeSupport()">X</button>
+</div>
+
+<div id="chatArea" style="height:70%;overflow:auto;"></div>
+
+<input id="supportMsg">
+<button onclick="sendSupport()">Send</button>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app = initializeApp({
+apiKey: "AIzaSyCb...",
+authDomain: "tradex-support.firebaseapp.com",
+projectId: "tradex-support"
+});
+
+const db = getFirestore(app);
+
 let currentChatUser = "";
 
-window.openAdminChat = function(email){
-  currentChatUser = email;
-
-  supportBox.style.display = "block"; // same chat UI open
-  loadAdminChat(); // admin chat load
+// SIGNUP
+window.signup = async function(){
+  await addDoc(collection(db,"users"),{
+    user: su_user.value,
+    email: su_email.value,
+    pass: su_pass.value,
+    balance: 0
+  });
+  alert("Signup Done");
 }
+
+// LOGIN
+window.login = async function(){
+  let snap = await getDocs(collection(db,"users"));
+
+  snap.forEach(docSnap=>{
+    let d = docSnap.data();
+
+    if(d.email==li_email.value && d.pass==li_pass.value){
+
+      localStorage.setItem("user",JSON.stringify({...d,id:docSnap.id}));
+
+      user.innerText=d.user;
+      email.innerText=d.email;
+      bal.innerText=d.balance;
+
+      auth.style.display="none";
+      dashboard.style.display="block";
+
+      if(d.email=="admin@tradex.com"){
+        adminPanel.style.display="block";
+        loadAdminMessages();
+      }
+    }
+  });
+}
+
+// CHAT OPEN
+window.openSupport = function(){
+  supportBox.style.display="block";
+  loadChat();
+}
+
+// CLOSE
+window.closeSupport = function(){
+  supportBox.style.display="none";
+}
+
+// USER CHAT
+async function loadChat(){
+  let u = JSON.parse(localStorage.getItem("user"));
+  let snap = await getDocs(collection(db,"support"));
+
+  let html="";
+
+  snap.forEach(doc=>{
+    let d = doc.data();
+    if(d.email==u.email){
+      html += `<p>${d.message}</p>`;
+    }
+  });
+
+  chatArea.innerHTML=html;
+}
+
+// ADMIN CHAT LOAD
 async function loadAdminChat(){
   let snap = await getDocs(collection(db,"support"));
   let html="";
@@ -233,128 +350,57 @@ async function loadAdminChat(){
   snap.forEach(doc=>{
     let d = doc.data();
 
-    if(d.email == currentChatUser){
-
-      if(d.sender == "admin"){
-        html += `<div style="text-align:right; margin:5px;">
-          <span style="background:green; padding:8px; border-radius:10px;">${d.message}</span>
-        </div>`;
-      } else {
-        html += `<div style="text-align:left; margin:5px;">
-          <span style="background:#333; padding:8px; border-radius:10px;">${d.message}</span>
-        </div>`;
-      }
-
+    if(d.email==currentChatUser){
+      html += `<p>${d.sender}: ${d.message}</p>`;
     }
   });
 
-  document.getElementById("chatArea").innerHTML = html;
-  }
-window.closeSupport = function(){
-  supportBox.style.display = "none";
+  chatArea.innerHTML=html;
 }
 
+// SEND MESSAGE
 window.sendSupport = async function(){
   let u = JSON.parse(localStorage.getItem("user"));
-  let msg = document.getElementById("supportMsg").value;
+  let msg = supportMsg.value;
 
-  if(!msg){
-    alert("Message likho ❌");
-    return;
-  }
-
-  // 👇 decide karega admin ya user
-  let email = currentChatUser ? currentChatUser : u.email;
+  let email = currentChatUser || u.email;
   let sender = currentChatUser ? "admin" : "user";
 
   await addDoc(collection(db,"support"),{
-    email: email,
+    email,
     message: msg,
-    sender: sender,
-    time: new Date().toLocaleString()
+    sender
   });
 
-  document.getElementById("supportMsg").value = "";
+  supportMsg.value="";
 
-  // 👇 refresh chat
-  if(currentChatUser){
-    loadAdminChat();
-  } else {
-    loadChat();
-  }
-}
-window.scrollToChart=()=>chart.scrollIntoView();
-window.scrollToSupport=()=>msg.scrollIntoView();
-  window.openSupport = function(){
-  supportBox.style.display = "block";
-  loadChat(); // chat load hoga
+  currentChatUser ? loadAdminChat() : loadChat();
 }
 
-window.closeSupport = function(){
-  supportBox.style.display = "none";
-}
-window.sendSupport = async function(){
-  let u = JSON.parse(localStorage.getItem("user"));
-  let msg = document.getElementById("supportMsg").value;
-
-  if(!msg){
-    alert("Message likho ❌");
-    return;
-  }
-
-  await addDoc(collection(db,"support"),{
-    email: u.email,
-    message: msg,
-    sender: "user",
-    time: new Date().toLocaleString()
-  });
-
-  document.getElementById("supportMsg").value = "";
-
-  loadChat(); // 👈 message turant show hoga
-               }
-// DEPOSIT
-window.openDeposit=()=>depositBox.style.display="block";
-window.closeDeposit=()=>depositBox.style.display="none";
-window.copyWallet=()=>{
-  navigator.clipboard.writeText(walletAddress.innerText);
-  alert("Copied ✅");
-}
-
-window.onload=()=>setCoin("BTCUSDT");
-  async function loadChat(){
-  let u = JSON.parse(localStorage.getItem("user"));
+// ADMIN LIST
+async function loadAdminMessages(){
   let snap = await getDocs(collection(db,"support"));
-
   let html="";
 
   snap.forEach(doc=>{
     let d = doc.data();
 
-    if(d.email == u.email){
-      html += `<p>${d.message}</p>`;
-    }
+    html += `<p onclick="openAdminChat('${d.email}')">${d.email}</p>`;
   });
 
-  document.getElementById("chatArea").innerHTML = html;
-  }
+  adminMessages.innerHTML=html;
+}
+
+// OPEN ADMIN CHAT
+window.openAdminChat = function(email){
+  currentChatUser=email;
+  openSupport();
+  loadAdminChat();
+}
+
+window.logout=()=>location.reload();
+
 </script>
-<div id="supportBox" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0b141a; color:#fff;">
 
-  <div style="background:#202c33; padding:15px;">
-    <b>Support Chat 💬</b>
-    <button onclick="closeSupport()" style="float:right;">X</button>
-  </div>
-
-  <!-- Messages -->
-  <div id="chatArea" style="height:70%; overflow-y:auto; padding:10px;"></div>
-
-  <!-- Input -->
-  <div style="position:absolute; bottom:0; width:100%; background:#202c33; padding:10px;">
-    <input id="supportMsg" placeholder="Type message..." style="width:70%; padding:10px;">
-    <button onclick="sendSupport()">Send</button>
-  </div>
-
-</div>
 </body>
 </html>
