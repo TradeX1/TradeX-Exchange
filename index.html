@@ -186,8 +186,10 @@ async function loadSupportMessages(){
     let d = docSnap.data();
 
     html += `
-      <p>
-        <b>${d.email}</b>: ${d.message}
+  <p onclick="openAdminChat('${d.email}')" style="cursor:pointer;">
+    <b>${d.email}</b>: ${d.message}
+  </p>
+`;
         <br>
         <input id="reply_${docSnap.id}" placeholder="Reply...">
         <button onclick="sendReply('${d.email}','${docSnap.id}')">Reply</button>
@@ -216,7 +218,38 @@ window.openSupport = function(){
   supportBox.style.display = "block";
   loadChat();
 }
+let currentChatUser = "";
 
+window.openAdminChat = function(email){
+  currentChatUser = email;
+
+  supportBox.style.display = "block"; // same chat UI open
+  loadAdminChat(); // admin chat load
+}
+async function loadAdminChat(){
+  let snap = await getDocs(collection(db,"support"));
+  let html="";
+
+  snap.forEach(doc=>{
+    let d = doc.data();
+
+    if(d.email == currentChatUser){
+
+      if(d.sender == "admin"){
+        html += `<div style="text-align:right; margin:5px;">
+          <span style="background:green; padding:8px; border-radius:10px;">${d.message}</span>
+        </div>`;
+      } else {
+        html += `<div style="text-align:left; margin:5px;">
+          <span style="background:#333; padding:8px; border-radius:10px;">${d.message}</span>
+        </div>`;
+      }
+
+    }
+  });
+
+  document.getElementById("chatArea").innerHTML = html;
+  }
 window.closeSupport = function(){
   supportBox.style.display = "none";
 }
@@ -230,16 +263,25 @@ window.sendSupport = async function(){
     return;
   }
 
+  // 👇 decide karega admin ya user
+  let email = currentChatUser ? currentChatUser : u.email;
+  let sender = currentChatUser ? "admin" : "user";
+
   await addDoc(collection(db,"support"),{
-    email: u.email,
+    email: email,
     message: msg,
-    sender: "user",
+    sender: sender,
     time: new Date().toLocaleString()
   });
 
   document.getElementById("supportMsg").value = "";
 
-  loadChat();
+  // 👇 refresh chat
+  if(currentChatUser){
+    loadAdminChat();
+  } else {
+    loadChat();
+  }
 }
 window.scrollToChart=()=>chart.scrollIntoView();
 window.scrollToSupport=()=>msg.scrollIntoView();
