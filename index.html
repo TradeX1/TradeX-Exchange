@@ -59,6 +59,8 @@ button{background:#ff9800;color:#fff}
 <input id="newBal" placeholder="New Balance">
 <button onclick="updateBalance()">Update Balance</button>
 <div id="users"></div>
+  <h3>Support Messages 💬</h3>
+<div id="adminMessages"></div>
 </div><button onclick="logout()">Logout</button>
 
 </div><div class="bottom">
@@ -114,6 +116,7 @@ window.login = async function(){
         adminPanel.style.display="block";
         loadUsers();
       }
+      loadSupportMessages();
     }
   });
 }
@@ -175,7 +178,25 @@ async function loadUsers(){
 
   users.innerHTML=html;
 }
+async function loadSupportMessages(){
+  let snap = await getDocs(collection(db,"support"));
+  let html="";
 
+  snap.forEach(docSnap=>{
+    let d = docSnap.data();
+
+    html += `
+      <p>
+        <b>${d.email}</b>: ${d.message}
+        <br>
+        <input id="reply_${docSnap.id}" placeholder="Reply...">
+        <button onclick="sendReply('${d.email}','${docSnap.id}')">Reply</button>
+      </p>
+    `;
+  });
+
+  document.getElementById("adminMessages").innerHTML = html;
+}
 // CHART
 window.setCoin = function(c){
   chart.src = "https://s.tradingview.com/widgetembed/?symbol=BINANCE:"+c;
