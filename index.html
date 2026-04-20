@@ -84,33 +84,50 @@ const db = getFirestore(app);
 
 // SIGNUP
 window.signup = async function(){
+  let userVal = document.getElementById("su_user").value;
+  let emailVal = document.getElementById("su_email").value;
+  let passVal = document.getElementById("su_pass").value;
+
   await addDoc(collection(db,"users"),{
-    user: su_user.value,
-    email: su_email.value,
-    pass: su_pass.value,
+    user: userVal,
+    email: emailVal,
+    pass: passVal,
     balance: 0
   });
+
   alert("Signup success ✅");
 }
 
 // LOGIN
 window.login = async function(){
+  let emailVal = document.getElementById("li_email").value;
+  let passVal = document.getElementById("li_pass").value;
+
   let snap = await getDocs(collection(db,"users"));
+
+  let found = false;
 
   snap.forEach(docSnap=>{
     let d = docSnap.data();
 
-    if(d.email==li_email.value && d.pass==li_pass.value){
+    if(d.email==emailVal && d.pass==passVal){
+      found = true;
 
-      localStorage.setItem("user",JSON.stringify({...d,id:docSnap.id}));
+      localStorage.setItem("user",JSON.stringify(d));
 
-      user.innerText=d.user;
-      email.innerText=d.email;
-      bal.innerText=d.balance || 0;
+      document.getElementById("user").innerText = d.user;
+      document.getElementById("email").innerText = d.email;
+      document.getElementById("bal").innerText = d.balance;
 
-      auth.style.display="none";
-      dashboard.style.display="block";
+      document.getElementById("auth").style.display="none";
+      document.getElementById("dashboard").style.display="block";
+    }
+  });
 
+  if(!found){
+    alert("Invalid login ❌");
+  }
+}
       if(d.email=="admin@tradex.com"){
         adminPanel.style.display="block";
         loadUsers();
