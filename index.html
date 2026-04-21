@@ -357,28 +357,40 @@ window.signup = async function(){
 
 // LOGIN
 window.login = async function(){
+
   let snap = await getDocs(collection(db,"users"));
 
-  snap.forEach(docSnap=>{
+  let found = false;
+
+  for (const docSnap of snap.docs) {
+
     let d = docSnap.data();
 
-    if(d.email==li_email.value && d.pass==li_pass.value){
+    if(d.email == li_email.value && d.pass == li_pass.value){
 
-      localStorage.setItem("user",JSON.stringify(d));
+      found = true;
 
-      user.innerText=d.user;
-      email.innerText=d.email;
-      bal.innerText=d.balance;
+      localStorage.setItem("user", JSON.stringify(d));
 
-      auth.style.display="none";
-      dashboard.style.display="block";
+      user.innerText = d.user;
+      email.innerText = d.email;
+      bal.innerText = d.balance;
 
-      if(d.email=="admin@tradex.com"){
-        adminPanel.style.display="block";
+      auth.style.display = "none";
+      dashboard.style.display = "block";
+
+      if(d.email == "admin@tradex.com"){
+        adminPanel.style.display = "block";
         loadAdmin();
       }
+
+      break; // 🔥 important
     }
-  });
+  }
+
+  if(!found){
+    alert("❌ Invalid Email or Password");
+  }
 }
 
 // BUY / SELL
