@@ -1,264 +1,27 @@
-<!DOCTYPE html><html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeX Ultimate FIXED</title><style>
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-.header{background:#ff9800;padding:15px;text-align:center;font-weight:bold}
-.card{background:#111;padding:15px;margin:10px;border-radius:10px}
-input,button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px}
-button{background:#ff9800;color:#fff}
-.bottom{position:fixed;bottom:0;width:100%;display:flex;background:#111}
-.bottom button{flex:1;background:#222}
-</style></head><body><div class="header">🔥 TradeX Ultimate</div> <div id="auth">
-  <input id="su_user" placeholder="Username">
-  <input id="su_email" placeholder="Email">
-  <input id="su_pass" placeholder="Password">
-  <button onclick="signup()">Signup</button>
-
-  <hr>
-
-  <input id="li_email" placeholder="Email">
-  <input id="li_pass" placeholder="Password">
-  <button onclick="login()">Login</button>
-</div>
-</div><div id="dashboard" style="display:none"><div class="card">
-<h3>Welcome <span id="user"></span></h3>
-<p id="email"></p>
-<h2>Balance: $<span id="bal">0</span></h2>
-</div><div class="card">
-<h3>Trade</h3>
-<input id="amount" placeholder="Enter amount">
-<button onclick="buy()">Buy</button>
-<button onclick="sell()">Sell</button>
-</div><div class="card">
-<h3>💰 Deposit</h3>
-<button onclick="openDeposit()">Add Funds</button><div id="depositBox" style="display:none;">
-<p><b>Wallet Address:</b></p>
-<p id="walletAddress">TQ6RJsuo9xah3GbL4U3fuboTYhGkdY6CB</p>
-<button onclick="copyWallet()">Copy</button><br><br> <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TQ6RJsuo9xah3GbL4U3fuboTYhGkdY6CB">
-
-<button onclick="closeDeposit()">Close</button>
-
-</div>
-</div><div class="card">
-<h3>Market</h3>
-<button onclick="setCoin('BTCUSDT')">BTC</button>
-<button onclick="setCoin('ETHUSDT')">ETH</button>
-<button onclick="setCoin('BNBUSDT')">BNB</button>
-  <button onclick="openSupport()">Customer Support 💬</button>
-  
-<iframe id="chart" width="100%" height="300"></iframe>
-</div><div class="card">
-<h3>Support</h3>
-<input id="msg" placeholder="Message">
-<button onclick="sendMsg()">Send</button>
-</div><div id="adminPanel" class="card" style="display:none">
-<h3>👑 Admin Panel</h3>
-<input id="targetEmail" placeholder="User Email">
-<input id="newBal" placeholder="New Balance">
-<button onclick="updateBalance()">Update Balance</button>
-<div id="users"></div>
-  <h3>Support Messages 💬</h3>
-<div id="adminMessages"></div>
-</div><button onclick="logout()">Logout</button>
-
-</div><div class="bottom">
-<button onclick="scrollToTop()">Home</button>
-<button onclick="scrollToChart()">Market</button>
-<button onclick="scrollToSupport()">Support</button>
-</div><script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCbMvOjA4m1QtnuRt7m7jXAddQq-W-Sh-k",
-  authDomain: "tradex-support.firebaseapp.com",
-  projectId: "tradex-support",
-  storageBucket: "tradex-support.appspot.com",
-  messagingSenderId: "822784979542",
-  appId: "1:822784979542:web:4b53d1c77c922eeb6781f7"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// SIGNUP
-window.signup = async function(){
-  let userVal = document.getElementById("su_user").value;
-  let emailVal = document.getElementById("su_email").value;
-  let passVal = document.getElementById("su_pass").value;
-
-  await addDoc(collection(db,"users"),{
-    user: userVal,
-    email: emailVal,
-    pass: passVal,
-    balance: 0
-  });
-
-  alert("Signup success ✅");
-}
-
-// LOGIN
-window.login = async function(){
-
-  let li_email = document.getElementById("li_email");
-  let li_pass = document.getElementById("li_pass");
-
-  let snap = await getDocs(collection(db,"users"));
-
-  let found = false;
-
-  for (const docSnap of snap.docs) {
-
-    let d = docSnap.data();
-
-    if(d.email == li_email.value && d.pass == li_pass.value){
-
-      found = true;
-
-      localStorage.setItem("user", JSON.stringify(d));
-
-      user.innerText = d.user;
-      email.innerText = d.email;
-      bal.innerText = d.balance;
-
-      auth.style.display = "none";
-      dashboard.style.display = "block";
-
-      if(d.email == "admin@tradex.com"){
-        adminPanel.style.display = "block";
-        loadAdmin();
-      }
-
-      break;
-    }
-  }
-
-  if(!found){
-    alert("❌ Invalid Email or Password");
-  }
-}
-      if(d.email=="admin@tradex.com"){
-        adminPanel.style.display="block";
-        loadUsers();
-      }
-      loadSupportMessages();
-    }
-  });
-}
-
-// BUY
-window.buy = async function(){
-  let u = JSON.parse(localStorage.getItem("user"));
-  let amt = Number(amount.value || 0);
-
-  u.balance += amt;
-
-  await updateDoc(doc(db,"users",u.id),{
-    balance: u.balance
-  });
-
-  bal.innerText=u.balance;
-}
-
-// SELL
-window.sell = async function(){
-  let u = JSON.parse(localStorage.getItem("user"));
-  let amt = Number(amount.value || 0);
-
-  u.balance -= amt;
-
-  await updateDoc(doc(db,"users",u.id),{
-    balance: u.balance
-  });
-
-  bal.innerText=u.balance;
-}
-
-// ADMIN UPDATE
-window.updateBalance = async function(){
-  let snap = await getDocs(collection(db,"users"));
-
-  snap.forEach(async (docSnap)=>{
-    let d = docSnap.data();
-
-    if(d.email == targetEmail.value){
-      await updateDoc(doc(db,"users",docSnap.id),{
-        balance: Number(newBal.value)
-      });
-
-      alert("Balance Updated ✅");
-    }
-  });
-}
-
-// LOAD USERS
-async function loadUsers(){
-  let snap = await getDocs(collection(db,"users"));
-  let html="";
-
-  snap.forEach(doc=>{
-    let d=doc.data();
-    html += `<p>${d.email || "No Email"} - $${d.balance || 0}</p>`;
-  });
-
-  users.innerHTML=html;
-}
-async function loadSupportMessages(){
-  let snap = await getDocs(collection(db,"support"));
-  let html="";
-
-  snap.forEach(docSnap=>{
-    let d = docSnap.data();
-
-    html += `
-  <p onclick="openAdminChat('${d.email}')" style="cursor:pointer;">
-    <b>${d.email}</b>: ${d.message}
-  </p>
-`;
-        <br>
-        <input id="reply_${docSnap.id}" placeholder="Reply...">
-        <button onclick="sendReply('${d.email}','${docSnap.id}')">Reply</button>
-      </p>
-    `;
-  });
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeX Fixed</title>
+<title>TradeX Complete</title>
 
 <style>
-body{margin:0;font-family:Arial;background:#000;color:#fff}
+body{margin:0;font-family:Arial;background:#0b0f19;color:#fff}
 .header{background:#ff9800;padding:15px;text-align:center;font-weight:bold}
-.card{background:#111;padding:15px;margin:10px;border-radius:10px}
+.card{background:#121826;padding:15px;margin:10px;border-radius:10px}
 input,button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px}
 button{background:#ff9800;color:#fff}
-</style>
-</head>
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeX Final</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#000;color:#fff}
-.header{background:#ff9800;padding:15px;text-align:center;font-weight:bold}
-.card{background:#111;padding:15px;margin:10px;border-radius:10px}
-input,button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:5px}
-button{background:#ff9800;color:#fff}
+#chatBox{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;display:none}
 </style>
 </head>
 
 <body>
 
-<div class="header">🔥 TradeX FINAL</div>
+<div class="header">🔥 TradeX Complete</div>
 
+<!-- AUTH -->
 <div id="auth">
 <div class="card">
 <h3>Signup</h3>
-<input id="su_user" placeholder="Username">
 <input id="su_email" placeholder="Email">
 <input id="su_pass" placeholder="Password">
 <button onclick="signup()">Signup</button>
@@ -272,37 +35,23 @@ button{background:#ff9800;color:#fff}
 </div>
 </div>
 
+<!-- DASHBOARD -->
 <div id="dashboard" style="display:none">
 
 <div class="card">
-<h3>Welcome <span id="user"></span></h3>
-<p id="email"></p>
+<h3 id="welcome"></h3>
 <h2>Balance: $<span id="bal">0</span></h2>
 </div>
 
 <div class="card">
-<h3>Trade</h3>
-<input id="amount" placeholder="Enter amount">
+<input id="amount" placeholder="Amount">
 <button onclick="buy()">Buy</button>
 <button onclick="sell()">Sell</button>
 </div>
 
 <div class="card">
-<h3>💰 Add Funds</h3>
-<button onclick="openDeposit()">Add Funds</button>
-
-<div id="depositBox" style="display:none;">
-<p>Send USDT (TRC20):</p>
-<p id="walletAddress">TQ6RJsuo9xah3GbL4U3fuboTYhGkdY6CB</p>
-<button onclick="copyWallet()">Copy</button>
-
-<br><br>
-
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TQ6RJsuo9xah3GbL4U3fuboTYhGkdY6CB">
-
-<br><br>
-<button onclick="closeDeposit()">Close</button>
-</div>
+<button onclick="deposit()">Deposit</button>
+<button onclick="withdraw()">Withdraw</button>
 </div>
 
 <div class="card">
@@ -310,15 +59,25 @@ button{background:#ff9800;color:#fff}
 <button onclick="setCoin('BTCUSDT')">BTC</button>
 <button onclick="setCoin('ETHUSDT')">ETH</button>
 <button onclick="setCoin('BNBUSDT')">BNB</button>
-
 <iframe id="chart" width="100%" height="300"></iframe>
 </div>
 
-<button onclick="openSupport()">Customer Support 💬</button>
+<div class="card">
+<button onclick="openChat()">Customer Support 💬</button>
+</div>
 
-<div id="adminPanel" style="display:none">
-<h3>Admin</h3>
-<div id="adminMessages"></div>
+<!-- ADMIN -->
+<div id="adminPanel" class="card" style="display:none">
+<h3>Admin Panel</h3>
+
+<h4>Users</h4>
+<div id="usersList"></div>
+
+<h4>Deposits</h4>
+<div id="deposits"></div>
+
+<h4>Withdraws</h4>
+<div id="withdraws"></div>
 </div>
 
 <button onclick="logout()">Logout</button>
@@ -326,143 +85,175 @@ button{background:#ff9800;color:#fff}
 </div>
 
 <!-- CHAT -->
-<div id="supportBox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;">
-<div style="background:#222;padding:10px;">
-Support Chat
-<button onclick="closeSupport()">X</button>
+<div id="chatBox">
+<div style="background:#111;padding:10px">
+Chat <button onclick="closeChat()" style="float:right">X</button>
 </div>
 
-<div id="chatArea" style="height:70%;overflow:auto;"></div>
+<div id="chatArea" style="height:70%;overflow:auto"></div>
 
-<input id="supportMsg">
-<button onclick="sendSupport()">Send</button>
+<input id="msg" placeholder="Message">
+<button onclick="sendMsg()">Send</button>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// 🔴 APNA CONFIG YAHA PASTE KARO
 const firebaseConfig = {
-  apiKey: "AIzaSyCbMvOjA4m1QtnuRt7m7jXAddQq-W-Sh-k",
-  authDomain: "tradex-support.firebaseapp.com",
-  projectId: "tradex-support"
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_AUTH_DOMAIN",
+  projectId: "PASTE_PROJECT_ID"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentChatUser = "";
-
-// SIGNUP
-window.signup = async function(){
-  await addDoc(collection(db,"users"),{
-    user: su_user.value,
-    email: su_email.value,
-    pass: su_pass.value,
-    balance: 0
+// AUTH
+window.signup = async ()=>{
+  let res = await createUserWithEmailAndPassword(auth,su_email.value,su_pass.value);
+  await setDoc(doc(db,"users",res.user.uid),{
+    email:su_email.value,
+    balance:0
   });
-  alert("Signup success ✅");
+  alert("Signup success");
 }
 
-// LOGIN
-window.login = async function(){
+window.login = async ()=>{
+  await signInWithEmailAndPassword(auth,li_email.value,li_pass.value);
+}
 
-  let snap = await getDocs(collection(db,"users"));
+// AUTO LOGIN
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    let snap = await getDoc(doc(db,"users",user.uid));
+    let data = snap.data();
 
-  let found = false;
+    auth.style.display="none";
+    dashboard.style.display="block";
 
-  for (const docSnap of snap.docs) {
+    welcome.innerText=data.email;
+    bal.innerText=data.balance;
 
-    let d = docSnap.data();
-
-    if(d.email == li_email.value && d.pass == li_pass.value){
-
-      found = true;
-
-      localStorage.setItem("user", JSON.stringify(d));
-
-      user.innerText = d.user;
-      email.innerText = d.email;
-      bal.innerText = d.balance;
-
-      auth.style.display = "none";
-      dashboard.style.display = "block";
-
-      if(d.email == "admin@tradex.com"){
-        adminPanel.style.display = "block";
-        loadAdmin();
-      }
-
-      break; // 🔥 important
+    if(data.email=="admin@tradex.com"){
+      adminPanel.style.display="block";
+      loadUsers();
+      loadDeposits();
+      loadWithdraws();
     }
   }
+});
 
-  if(!found){
-    alert("❌ Invalid Email or Password");
-  }
+// BUY/SELL
+window.buy = async ()=>{
+  let u = auth.currentUser;
+  let ref = doc(db,"users",u.uid);
+  let snap = await getDoc(ref);
+
+  await updateDoc(ref,{
+    balance: snap.data().balance + Number(amount.value)
+  });
+
+  alert("Buy done");
 }
 
-// BUY / SELL
-window.buy = ()=> alert("⚠️ Please add funds first");
-window.sell = ()=> alert("✅ Withdraw request sent");
+window.sell = async ()=>{
+  let u = auth.currentUser;
+  let ref = doc(db,"users",u.uid);
+  let snap = await getDoc(ref);
+
+  await updateDoc(ref,{
+    balance: snap.data().balance - Number(amount.value)
+  });
+
+  alert("Sell done");
+}
 
 // DEPOSIT
-window.openDeposit=()=>depositBox.style.display="block";
-window.closeDeposit=()=>depositBox.style.display="none";
-window.copyWallet=()=>{
-  navigator.clipboard.writeText(walletAddress.innerText);
-  alert("Copied ✅");
+window.deposit = async ()=>{
+  let u = auth.currentUser;
+  let amt = Number(prompt("Deposit amount"));
+
+  await addDoc(collection(db,"transactions"),{
+    uid:u.uid,type:"deposit",amount:amt,status:"pending"
+  });
+
+  alert("Deposit request sent");
 }
+
+// WITHDRAW
+window.withdraw = async ()=>{
+  let u = auth.currentUser;
+  let amt = Number(prompt("Withdraw amount"));
+
+  await addDoc(collection(db,"transactions"),{
+    uid:u.uid,type:"withdraw",amount:amt,status:"pending"
+  });
+
+  alert("Withdraw request sent");
+}
+
+// ADMIN
+async function loadUsers(){
+  let snap = await getDocs(collection(db,"users"));
+  let html="";
+  snap.forEach(d=>{
+    html+=`<p>${d.data().email}</p>`;
+  });
+  usersList.innerHTML=html;
+}
+
+async function loadDeposits(){
+  let snap = await getDocs(collection(db,"transactions"));
+  let html="";
+  snap.forEach(d=>{
+    let data=d.data();
+    if(data.type=="deposit" && data.status=="pending"){
+      html+=`<p>${data.uid} $${data.amount}
+      <button onclick="approveDeposit('${d.id}','${data.uid}',${data.amount})">Approve</button></p>`;
+    }
+  });
+  deposits.innerHTML=html;
+}
+
+window.approveDeposit = async (id,uid,amt)=>{
+  let ref = doc(db,"users",uid);
+  let snap = await getDoc(ref);
+
+  await updateDoc(ref,{
+    balance:snap.data().balance+amt
+  });
+
+  await updateDoc(doc(db,"transactions",id),{status:"done"});
+  loadDeposits();
+}
+
+// CHAT
+window.openChat=()=>chatBox.style.display="block";
+window.closeChat=()=>chatBox.style.display="none";
+
+window.sendMsg = async ()=>{
+  let u = auth.currentUser;
+  await addDoc(collection(db,"chat"),{
+    uid:u.uid,
+    msg:msg.value
+  });
+  msg.value="";
+}
+
+// LOGOUT
+window.logout = ()=>signOut(auth);
 
 // CHART
-window.setCoin = c => chart.src="https://s.tradingview.com/widgetembed/?symbol=BINANCE:"+c;
-
-// CHAT USER
-window.openSupport=()=>{supportBox.style.display="block";loadChat();}
-window.closeSupport=()=>supportBox.style.display="none";
-
-async function loadChat(){
-  let u=JSON.parse(localStorage.getItem("user"));
-  let snap=await getDocs(collection(db,"support"));
-  let html="";
-  snap.forEach(doc=>{
-    let d=doc.data();
-    if(d.email==u.email) html+=`<p>${d.message}</p>`;
-  });
-  chatArea.innerHTML=html;
+window.setCoin = c=>{
+  chart.src="https://s.tradingview.com/widgetembed/?symbol=BINANCE:"+c;
 }
-
-// SEND MESSAGE
-window.sendSupport=async function(){
-  let u=JSON.parse(localStorage.getItem("user"));
-  let msg=supportMsg.value;
-
-  await addDoc(collection(db,"support"),{
-    email:u.email,
-    message:msg,
-    sender:"user"
-  });
-
-  supportMsg.value="";
-  loadChat();
-}
-
-// ADMIN VIEW
-async function loadAdmin(){
-  let snap=await getDocs(collection(db,"support"));
-  let html="";
-  snap.forEach(doc=>{
-    let d=doc.data();
-    html+=`<p>${d.email}: ${d.message}</p>`;
-  });
-  adminMessages.innerHTML=html;
-}
-
-window.logout=()=>location.reload();
 window.onload=()=>setCoin("BTCUSDT");
 
 </script>
-
 </body>
 </html>
