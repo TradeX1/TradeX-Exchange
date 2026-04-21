@@ -100,32 +100,42 @@ window.signup = async function(){
 
 // LOGIN
 window.login = async function(){
-  let emailVal = document.getElementById("li_email").value;
-  let passVal = document.getElementById("li_pass").value;
+
+  let li_email = document.getElementById("li_email");
+  let li_pass = document.getElementById("li_pass");
 
   let snap = await getDocs(collection(db,"users"));
 
   let found = false;
 
-  snap.forEach(docSnap=>{
+  for (const docSnap of snap.docs) {
+
     let d = docSnap.data();
 
-    if(d.email==emailVal && d.pass==passVal){
+    if(d.email == li_email.value && d.pass == li_pass.value){
+
       found = true;
 
-      localStorage.setItem("user",JSON.stringify(d));
+      localStorage.setItem("user", JSON.stringify(d));
 
-      document.getElementById("user").innerText = d.user;
-      document.getElementById("email").innerText = d.email;
-      document.getElementById("bal").innerText = d.balance;
+      user.innerText = d.user;
+      email.innerText = d.email;
+      bal.innerText = d.balance;
 
-      document.getElementById("auth").style.display="none";
-      document.getElementById("dashboard").style.display="block";
+      auth.style.display = "none";
+      dashboard.style.display = "block";
+
+      if(d.email == "admin@tradex.com"){
+        adminPanel.style.display = "block";
+        loadAdmin();
+      }
+
+      break;
     }
-  });
+  }
 
   if(!found){
-    alert("Invalid login ❌");
+    alert("❌ Invalid Email or Password");
   }
 }
       if(d.email=="admin@tradex.com"){
